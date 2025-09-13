@@ -1,0 +1,602 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unobtanium Ecosystem</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .container {
+            width: 50%;
+            max-width: 600px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #800080;
+            text-align: center;
+        }
+        .coin {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #ffd700, #b8860b);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+            color: #800080;
+            text-align: center;
+        }
+        .header-info, .governance {
+            font-size: 14px;
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .user-info {
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .nav button {
+            background-color: #ffd700;
+            color: #800080;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .nav button:hover {
+            background-color: #e6c200;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #800080;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #800080;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #660066;
+        }
+        .status {
+            font-style: italic;
+            color: #333;
+            margin-top: 10px;
+        }
+        .list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .list div {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .list button {
+            width: auto;
+            padding: 5px 10px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="coin">Unobtanium</div>
+        <h1>Unobtanium Ecosystem</h1>
+        <div class="header-info">
+            All transactions in Credits (1:1 to 2019 USD). Consignment Store Model for Goods & Services.<br>
+            Negative Dues: 2,500 Credits/month, reduces by half of income above 2,500/month, 0 at 100,000 Credits.<br>
+            Essentials cap: 20,000 Credits lifetime, then 100% coverage.
+        </div>
+        <div class="governance">
+            Governance: Gunther Adolfo Zielke has permanent ability to print and destroy credits until passing.<br>
+            Heirs shall give this ability to the Jewish Messiah.<br>
+            Freelance & Labor Ownership: Isaiah (20%), Dad (20%), Mom (20%), Lenny (20%), IPO (20%).
+        </div>
+        <div class="user-info">Logged in as: Gunther Adolfo Zielke (Admin) | Balance: <span id="user-balance">0</span> Credits</div>
+
+        <div class="nav">
+            <button id="nav-goods-marketplace">Goods Marketplace</button>
+            <button id="nav-freelance-labor">Freelance & Labor</button>
+            <button id="nav-consumers-alliance">Consumer’s Alliance</button>
+            <button id="nav-operation-lightspeed">Operation Lightspeed</button>
+            <button id="nav-2x2-ads">2x2 Ads</button>
+            <button id="nav-tiny-homes-beds">Tiny Homes Beds</button>
+        </div>
+
+        <div id="goods-marketplace" class="section">
+            <h2>Goods Marketplace</h2>
+            <div class="form-group">
+                <label for="item-name">Item Name</label>
+                <input type="text" id="item-name">
+                <label for="item-description">Description</label>
+                <textarea id="item-description"></textarea>
+                <label for="item-category">Product Category</label>
+                <select id="item-category">
+                    <option value="Food">Food</option>
+                    <option value="Pokémon Cards">Pokémon Cards</option>
+                    <option value="Electronics">Electronics</option>
+                </select>
+                <label for="item-transaction-type">Transaction Type</label>
+                <select id="item-transaction-type">
+                    <option value="Sell">Sell</option>
+                    <option value="Trade">Trade</option>
+                </select>
+                <label for="item-price">Price (Credits)</label>
+                <input type="number" id="item-price">
+                <button id="list-item-btn">List Item</button>
+            </div>
+            <div class="status" id="marketplace-status"></div>
+            <div class="list" id="marketplace-list"></div>
+        </div>
+
+        <div id="freelance-labor" class="section">
+            <h2>Freelance & Labor</h2>
+            <div class="form-group">
+                <label for="job-title">Job Title</label>
+                <input type="text" id="job-title">
+                <label for="job-description">Description</label>
+                <textarea id="job-description"></textarea>
+                <label for="job-category">Category</label>
+                <select id="job-category">
+                    <option value="Web Development">Web Development</option>
+                    <option value="Graphic Design">Graphic Design</option>
+                    <option value="Construction">Construction</option>
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Electrical">Electrical</option>
+                </select>
+                <label><input type="checkbox" id="job-union"> Union Job</label>
+                <label for="job-budget">Budget (Credits)</label>
+                <input type="number" id="job-budget">
+                <label for="job-bid-amount">Bid Amount (Optional)</label>
+                <input type="number" id="job-bid-amount">
+                <button id="post-job-btn">Post Job</button>
+            </div>
+            <div class="status" id="labor-status"></div>
+            <div class="list" id="labor-list"></div>
+        </div>
+
+        <div id="consumers-alliance" class="section">
+            <h2>Consumer’s Alliance</h2>
+            <button id="claim-dues-btn">Claim Negative Dues</button>
+            <div class="form-group">
+                <h3>Issue Credits</h3>
+                <label for="issue-user">Select User</label>
+                <select id="issue-user"></select>
+                <label for="issue-amount">Amount to Issue</label>
+                <input type="number" id="issue-amount">
+                <button id="issue-credits-btn">Issue Credits</button>
+            </div>
+            <div class="form-group">
+                <h3>Destroy Credits</h3>
+                <label for="destroy-user">Select User</label>
+                <select id="destroy-user"></select>
+                <label for="destroy-amount">Amount to Destroy</label>
+                <input type="number" id="destroy-amount">
+                <button id="destroy-credits-btn">Destroy Credits</button>
+            </div>
+            <div class="form-group">
+                <label for="account-search">Search Accounts</label>
+                <input type="text" id="account-search">
+            </div>
+            <div class="status" id="consumers-status"></div>
+            <div class="list" id="accounts-list"></div>
+        </div>
+
+        <div id="operation-lightspeed" class="section">
+            <h2>Operation Lightspeed</h2>
+            <div class="form-group">
+                <label for="energy-amount">MWh to Buy</label>
+                <input type="number" id="energy-amount" step="0.01">
+                <button id="buy-energy-btn">Buy Energy</button>
+            </div>
+            <div class="status" id="lightspeed-status"></div>
+        </div>
+
+        <div id="2x2-ads" class="section">
+            <h2>2x2 Ads</h2>
+            <div class="form-group">
+                <label for="ad-content">Ad Content</label>
+                <textarea id="ad-content"></textarea>
+                <label for="ad-level">Level (1-100)</label>
+                <input type="number" id="ad-level" min="1" max="100">
+                <button id="place-ad-btn">Place Ad</button>
+            </div>
+            <div class="status" id="ads-status"></div>
+            <div class="list" id="ads-list"></div>
+        </div>
+
+        <div id="tiny-homes-beds" class="section">
+            <h2>Tiny Homes Beds</h2>
+            <div class="form-group">
+                <label for="bed-months">Months to Rent</label>
+                <input type="number" id="bed-months" min="1">
+                <button id="rent-bed-btn">Rent Bed</button>
+            </div>
+            <div class="status" id="beds-status"></div>
+        </div>
+    </div>
+
+    <script>
+        const accounts = [
+            { id: 1, name: "Gunther Adolfo Zielke", type: "Admin", trustFund: 0, balance: 0, income: 0, negativeDues: 2500 },
+            { id: 2, name: "Dad", type: "Family", trustFund: 10000000000, balance: 0, income: 0, negativeDues: 2500, freelanceStake: 0.20 },
+            { id: 3, name: "Mom", type: "Family", trustFund: 10000000000, balance: 0, income: 0, negativeDues: 2500, freelanceStake: 0.20 },
+            { id: 4, name: "Lenny", type: "Family", trustFund: 6000000000, balance: 0, income: 0, negativeDues: 2500, freelanceStake: 0.20 },
+            { id: 5, name: "Isaiah", type: "Close Friend", trustFund: 4000000000, balance: 4000000000, income: 0, negativeDues: 2500, freelanceStake: 0.20 },
+            ...Array.from({ length: 100 }, (_, i) => ({
+                id: i + 6,
+                name: `Extended Family ${i + 1}`,
+                type: "Family",
+                trustFund: 5000000000,
+                balance: 0,
+                income: 0,
+                negativeDues: 2500
+            })),
+            ...Array.from({ length: 99 }, (_, i) => ({
+                id: i + 106,
+                name: `Close Friend ${i + 1}`,
+                type: "Close Friend",
+                trustFund: 4000000000,
+                balance: 0,
+                income: 0,
+                negativeDues: 2500
+            })),
+            ...Array.from({ length: 1000 }, (_, i) => ({
+                id: i + 205,
+                name: `Friend ${i + 1}`,
+                type: "Friend",
+                trustFund: 2000000000,
+                balance: 0,
+                income: 0,
+                negativeDues: 2500
+            })),
+            { id: 1205, name: "Rene from NAMI", type: "Crush", trustFund: 1500000000, balance: 0, income: 0, negativeDues: 2500 },
+            { id: 1206, name: "Sierra from NAMI", type: "Crush", trustFund: 1500000000, balance: 0, income: 0, negativeDues: 2500 },
+            { id: 1207, name: "Layla from Discord", type: "Crush", trustFund: 1500000000, balance: 0, income: 0, negativeDues: 2500 }
+        ];
+        let essentialsSpent = 0;
+        const items = [];
+        const jobs = [];
+        const ads = [];
+        let currentSection = "goods-marketplace";
+        const freelanceStakeholders = [
+            { id: 2, stake: 0.20 }, // Dad
+            { id: 3, stake: 0.20 }, // Mom
+            { id: 4, stake: 0.20 }, // Lenny
+            { id: 5, stake: 0.20 }, // Isaiah
+            { id: 0, stake: 0.20 }  // IPO
+        ];
+
+        function updateBalanceDisplay() {
+            document.getElementById("user-balance").textContent = accounts[0].balance;
+        }
+
+        function calculateNegativeDues(income) {
+            if (income <= 2500) return 2500;
+            const excess = income - 2500;
+            const reduction = excess * 0.5;
+            return Math.max(0, 2500 - reduction);
+        }
+
+        function showSection(sectionId) {
+            console.log(`${sectionId.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())} button clicked`);
+            document.querySelectorAll(".section").forEach(section => section.classList.remove("active"));
+            document.getElementById(sectionId).classList.add("active");
+            currentSection = sectionId;
+        }
+
+        function populateAccounts() {
+            const issueSelect = document.getElementById("issue-user");
+            const destroySelect = document.getElementById("destroy-user");
+            issueSelect.innerHTML = destroySelect.innerHTML = accounts.map(account => 
+                `<option value="${account.id}">${account.name} (ID: ${account.id})</option>`
+            ).join("");
+            updateAccountsList();
+        }
+
+        function updateAccountsList(search = "") {
+            const list = document.getElementById("accounts-list");
+            list.innerHTML = accounts
+                .filter(account => account.name.toLowerCase().includes(search.toLowerCase()))
+                .map(account => `
+                    <div data-account-id="${account.id}">
+                        ID: ${account.id} - ${account.name}, Type: ${account.type}, Trust Fund: ${account.trustFund}, Balance: ${account.balance}, Negative Dues: ${account.negativeDues}
+                    </div>
+                `).join("");
+        }
+
+        document.querySelectorAll(".nav button").forEach(button => {
+            button.addEventListener("click", () => showSection(button.id.replace("nav-", "")));
+        });
+
+        document.getElementById("claim-dues-btn").addEventListener("click", () => {
+            console.log("Claim Negative Dues button clicked");
+            const user = accounts[0];
+            user.balance += user.negativeDues;
+            document.getElementById("consumers-status").textContent = `Claimed ${user.negativeDues} Credits for negative dues`;
+            updateBalanceDisplay();
+            updateAccountsList();
+        });
+
+        document.getElementById("issue-credits-btn").addEventListener("click", () => {
+            console.log("Issue Credits button clicked");
+            const userId = parseInt(document.getElementById("issue-user").value);
+            const amount = parseInt(document.getElementById("issue-amount").value);
+            if (amount > 0) {
+                const user = accounts.find(a => a.id === userId);
+                user.balance += amount;
+                user.income += amount;
+                user.negativeDues = calculateNegativeDues(user.income);
+                document.getElementById("consumers-status").textContent = `Issued ${amount} Credits to ${user.name}. New Balance: ${user.balance}, New Negative Dues: ${user.negativeDues}`;
+                updateBalanceDisplay();
+                updateAccountsList();
+            }
+        });
+
+        document.getElementById("destroy-credits-btn").addEventListener("click", () => {
+            console.log("Destroy Credits button clicked");
+            const userId = parseInt(document.getElementById("destroy-user").value);
+            const amount = parseInt(document.getElementById("destroy-amount").value);
+            const user = accounts.find(a => a.id === userId);
+            if (amount > 0 && user.balance >= amount) {
+                user.balance -= amount;
+                user.income -= amount;
+                user.negativeDues = calculateNegativeDues(user.income);
+                document.getElementById("consumers-status").textContent = `Destroyed ${amount} Credits from ${user.name}. New Balance: ${user.balance}, New Negative Dues: ${user.negativeDues}`;
+                updateBalanceDisplay();
+                updateAccountsList();
+            } else {
+                document.getElementById("consumers-status").textContent = "Insufficient balance or invalid amount";
+            }
+        });
+
+        document.getElementById("account-search").addEventListener("input", (e) => {
+            updateAccountsList(e.target.value);
+        });
+
+        document.getElementById("list-item-btn").addEventListener("click", () => {
+            console.log("List Item button clicked");
+            const name = document.getElementById("item-name").value;
+            const description = document.getElementById("item-description").value;
+            const category = document.getElementById("item-category").value;
+            const transactionType = document.getElementById("item-transaction-type").value;
+            const price = parseInt(document.getElementById("item-price").value);
+            if (name && price > 0) {
+                const itemId = items.length + 1;
+                items.push({ id: itemId, name, description, category, transactionType, price });
+                document.getElementById("marketplace-status").textContent = `Item listed: ${name} for ${price} Credits`;
+                updateMarketplaceList();
+            }
+        });
+
+        function updateMarketplaceList() {
+            const list = document.getElementById("marketplace-list");
+            list.innerHTML = items.map(item => `
+                <div data-item-id="${item.id}">
+                    ${item.name} (${item.category}, ${item.transactionType}, ${item.price} Credits)
+                    <button class="buy-trade-btn" data-item-id="${item.id}">${item.transactionType}</button>
+                </div>
+            `).join("");
+            document.querySelectorAll(".buy-trade-btn").forEach(button => {
+                button.addEventListener("click", () => {
+                    console.log(`Buy/Trade button clicked for item ${button.dataset.itemId}`);
+                    const item = items.find(i => i.id === parseInt(button.dataset.itemId));
+                    let cost = item.price;
+                    if (item.category === "Food" && essentialsSpent + cost > 20000) {
+                        cost = 0;
+                    }
+                    if (accounts[0].balance >= cost) {
+                        accounts[0].balance -= cost;
+                        if (item.category === "Food") essentialsSpent += item.price;
+                        document.getElementById("marketplace-status").textContent = `Purchased/Traded: ${item.name} for ${cost} Credits`;
+                        updateBalanceDisplay();
+                    } else {
+                        document.getElementById("marketplace-status").textContent = "Insufficient balance";
+                    }
+                });
+            });
+        }
+
+        document.getElementById("post-job-btn").addEventListener("click", () => {
+            console.log("Post Job button clicked");
+            const title = document.getElementById("job-title").value;
+            const description = document.getElementById("job-description").value;
+            const category = document.getElementById("job-category").value;
+            const union = document.getElementById("job-union").checked;
+            const budget = parseInt(document.getElementById("job-budget").value);
+            const bidAmount = parseInt(document.getElementById("job-bid-amount").value) || null;
+            if (title && budget > 0) {
+                const jobId = jobs.length + 1;
+                jobs.push({ id: jobId, title, description, category, union, budget, bids: bidAmount ? [bidAmount] : [] });
+                document.getElementById("labor-status").textContent = `Job posted: ${title} for ${budget} Credits`;
+                updateLaborList();
+            }
+        });
+
+        function updateLaborList() {
+            const list = document.getElementById("labor-list");
+            list.innerHTML = jobs.map(job => `
+                <div data-job-id="${job.id}">
+                    ${job.title} (${job.category}, ${job.union ? "Union" : "Non-Union"}, Budget: ${job.budget} Credits, Bids: ${job.bids.length})
+                    <button class="bid-btn" data-job-id="${job.id}">Bid</button>
+                    <button class="hire-btn" data-job-id="${job.id}">Hire</button>
+                </div>
+            `).join("");
+            document.querySelectorAll(".bid-btn").forEach(button => {
+                button.addEventListener("click", () => {
+                    console.log(`Bid button clicked for job ${button.dataset.jobId}`);
+                    const bid = prompt("Enter your bid amount:");
+                    if (bid && !isNaN(bid) && parseInt(bid) > 0) {
+                        const job = jobs.find(j => j.id === parseInt(button.dataset.jobId));
+                        job.bids.push(parseInt(bid));
+                        document.getElementById("labor-status").textContent = `Bid placed: ${bid} Credits for ${job.title}`;
+                        updateLaborList();
+                    }
+                });
+            });
+            document.querySelectorAll(".hire-btn").forEach(button => {
+                button.addEventListener("click", () => {
+                    console.log(`Hire button clicked for job ${button.dataset.jobId}`);
+                    const job = jobs.find(j => j.id === parseInt(button.dataset.jobId));
+                    if (job.bids.length > 0 && accounts[0].balance >= Math.min(...job.bids)) {
+                        const cost = Math.min(...job.bids);
+                        accounts[0].balance -= cost;
+                        freelanceStakeholders.forEach(stakeholder => {
+                            if (stakeholder.id === 0) return; // IPO doesn't receive direct balance
+                            const account = accounts.find(a => a.id === stakeholder.id);
+                            if (account) {
+                                account.balance += cost * stakeholder.stake;
+                            }
+                        });
+                        document.getElementById("labor-status").textContent = `Hired for job ${job.title} at ${cost} Credits. Stakeholders earned ${cost * 0.80} Credits.`;
+                        updateBalanceDisplay();
+                        updateAccountsList();
+                    } else {
+                        document.getElementById("labor-status").textContent = "No bids or insufficient balance";
+                    }
+                });
+            });
+        }
+
+        document.getElementById("buy-energy-btn").addEventListener("click", () => {
+            console.log("Buy Energy button clicked");
+            const amount = parseFloat(document.getElementById("energy-amount").value);
+            if (amount > 0) {
+                const cost = amount * 300;
+                if (accounts[0].balance >= cost) {
+                    accounts[0].balance -= cost;
+                    document.getElementById("lightspeed-status").textContent = `Purchased ${amount.toFixed(2)} MWh for ${cost} Credits`;
+                    updateBalanceDisplay();
+                } else {
+                    document.getElementById("lightspeed-status").textContent = "Insufficient balance";
+                }
+            }
+        });
+
+        document.getElementById("place-ad-btn").addEventListener("click", () => {
+            console.log("Place Ad button clicked");
+            const content = document.getElementById("ad-content").value;
+            const level = parseInt(document.getElementById("ad-level").value);
+            if (content && level >= 1 && level <= 100) {
+                const cost = 0.10;
+                const payout = level * 2.5;
+                if (accounts[0].balance >= cost) {
+                    accounts[0].balance -= cost;
+                    ads.push({ content, level, payout });
+                    document.getElementById("ads-status").textContent = `Ad placed: ${content}, Payout: ${payout} Credits`;
+                    updateAdsList();
+                    updateBalanceDisplay();
+                } else {
+                    document.getElementById("ads-status").textContent = "Insufficient balance";
+                }
+            }
+        });
+
+        function updateAdsList() {
+            const list = document.getElementById("ads-list");
+            list.innerHTML = ads.map(ad => `<div>${ad.content} (Level: ${ad.level}, Payout: ${ad.payout} Credits)</div>`).join("");
+        }
+
+        document.getElementById("rent-bed-btn").addEventListener("click", () => {
+            console.log("Rent Bed button clicked");
+            const months = parseInt(document.getElementById("bed-months").value);
+            if (months > 0) {
+                const cost = months * 50;
+                if (accounts[0].balance >= cost) {
+                    accounts[0].balance -= cost;
+                    document.getElementById("beds-status").textContent = `Rented bed for ${months} months for ${cost} Credits`;
+                    updateBalanceDisplay();
+                } else {
+                    document.getElementById("beds-status").textContent = "Insufficient balance";
+                }
+            }
+        });
+
+        showSection("goods-marketplace");
+        populateAccounts();
+        updateBalanceDisplay();
+    </script>
+</body>
+</html>
